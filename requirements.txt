@@ -1,0 +1,5 @@
+babel==2.18.0
+customtkinter==5.2.2
+darkdetect==0.8.0
+packaging==26.2
+tkcalendar==1.6.1
