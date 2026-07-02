@@ -282,7 +282,7 @@ class HotelApp(ctk.CTk):
 
         # Создаём заголовок таблицы (один раз)
         headers = ["ID", "👤  Фамилия", "Имя", "Отчество", "📞  Телефон", "Карточка"]
-        widths = [70, 160, 130, 160, 150, 100]
+        widths = [60, 140, 110, 140, 130, 90]
 
         header_row = ctk.CTkFrame(table_frame, fg_color="#2b2b2b", corner_radius=8, height=45)
         header_row.pack(fill="x", padx=5, pady=(8, 4))
@@ -352,11 +352,11 @@ class HotelApp(ctk.CTk):
             row_frame.pack_propagate(False)
 
             ctk.CTkLabel(row_frame, text=f"#{int(guest_id):05d}",
-                         font=("Arial", 12), width=70,
+                         font=("Arial", 12), width=60,
                          anchor="w", text_color="#888888").pack(side="left", padx=(15, 0))
 
             values = [last_name, first_name, patronymic or "—", phone or "—"]
-            col_widths = [160, 130, 160, 150]
+            col_widths = [140, 110, 140, 130]
             for val, w in zip(values, col_widths):
                 ctk.CTkLabel(row_frame, text=val, font=("Arial", 13), text_color="white",
                              width=w, anchor="w").pack(side="left", padx=(15, 0))
@@ -449,13 +449,19 @@ class HotelApp(ctk.CTk):
         birth_row = ctk.CTkFrame(left_frame, fg_color="transparent")
         birth_row.grid(row=4, column=0, pady=(6, 0), sticky="ew")
         birth_row.grid_columnconfigure(0, weight=0)
-        birth_row.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(birth_row, text="Дата рождения:", font=("Arial", 12)).grid(
             row=0, column=0, padx=(0, 10), sticky="w")
         self.entry_birth_quick = ctk.CTkEntry(birth_row, placeholder_text="ДД.ММ.ГГГГ", width=130)
         self.entry_birth_quick.grid(row=0, column=1, sticky="w")
         self.entry_birth_quick.bind("<FocusOut>", lambda e: self._check_age_quick())
+        # Кнопка календаря для даты рождения
+        ctk.CTkButton(
+            birth_row,
+            text="📅",
+            width=35,
+            command=lambda: self.open_calendar(self.entry_birth_quick)
+        ).grid(row=0, column=2, padx=(5, 5), sticky="w")
 
         # Предупреждение о возрасте
         self.lbl_age_warning = ctk.CTkLabel(
@@ -1023,30 +1029,67 @@ class HotelApp(ctk.CTk):
             row=14, column=0, pady=(15, 5), sticky="w")
         birth_lang_row = ctk.CTkFrame(left_frame, fg_color="transparent")
         birth_lang_row.grid(row=15, column=0, pady=5, sticky="ew")
-        birth_lang_row.grid_columnconfigure(0, weight=1)
-        birth_lang_row.grid_columnconfigure(1, weight=1)
+        # birth_lang_row.grid_columnconfigure(0, weight=1)
+        # birth_lang_row.grid_columnconfigure(1, weight=1)
+
         ctk.CTkLabel(birth_lang_row, text="Дата рождения:", font=("Arial", 12)).grid(row=0, column=0, sticky="w")
+        birth_lang_row.grid_columnconfigure(0, weight=1)  # Дата
+        birth_lang_row.grid_columnconfigure(1, weight=0)  # Кнопка календаря
+        birth_lang_row.grid_columnconfigure(2, weight=1)  # Язык
         self.full_birth_date = ctk.CTkEntry(birth_lang_row, placeholder_text="ДД.ММ.ГГГГ", width=130)
-        self.full_birth_date.grid(row=1, column=0, sticky="w", padx=(0, 20))
-        ctk.CTkLabel(birth_lang_row, text="Язык:", font=("Arial", 12)).grid(row=0, column=1, sticky="w")
-        self.full_language = ctk.CTkOptionMenu(birth_lang_row, width=160,
+        self.full_birth_date.grid(row=1, column=0, sticky="w")
+        # Кнопка календаря для даты рождения
+        ctk.CTkButton(
+            birth_lang_row,
+            text="📅",
+            width=35,
+            command=lambda: self.open_calendar(self.full_birth_date),
+        ).grid(row=1, column=1, padx=(5, 25), sticky="w")
+        ctk.CTkLabel(birth_lang_row, text="Язык:", font=("Arial", 12)).grid(row=0, column=2, sticky="w")
+        self.full_language = ctk.CTkOptionMenu(birth_lang_row, width=130,
                                                values=["RU — Русский", "EN — English", "DE — Deutsch", "FR — Français",
                                                        "ZH — 中文", "AR — العربية", "ES — Español", "IT — Italiano",
                                                        "TR — Türkçe", "KO — 한국어", "JA — 日本語", "HI — Hindi"])
-        self.full_language.grid(row=1, column=1, sticky="w")
+        self.full_language.grid(row=1, column=2, sticky="w")
         self.full_language.set("RU — Русский")
 
-        # Скан паспорта (компактно)
+        # Скан паспорта
         scan_row = ctk.CTkFrame(left_frame, fg_color="transparent")
         scan_row.grid(row=16, column=0, pady=8, sticky="ew")
-        self.full_scan_label = ctk.CTkLabel(scan_row, text="Скан не прикреплён", text_color="#888888")
-        self.full_scan_label.pack(side="left", padx=(0, 10))
+        scan_row.grid_columnconfigure(0, weight=0, minsize=150)  # фикс. ширина под лейбл
+        scan_row.grid_columnconfigure(1, weight=0, minsize=130)  # фикс. ширина под кнопку "Прикрепить"
+        scan_row.grid_columnconfigure(2, weight=0, minsize=90)  # фикс. ширина под кнопку "Удалить"
+
+
+        # Лейбл статуса скана
+        self.full_scan_label = ctk.CTkLabel(
+            scan_row,
+            text="Скан не прикреплён",
+            text_color="#888888",
+            width=110,
+            anchor="w"
+        )
+        self.full_scan_label.grid(row=0, column=0, padx=(0, 10), sticky="w")
+
+        #Кнопка "Прикрепить"
         ctk.CTkButton(
             scan_row,
             text="📎 Прикрепить",
             width=120,
-            command=lambda: self._attach_scan("full_scan_path", self.full_scan_label)
-        ).pack(side="left")
+            command=lambda: self._attach_scan("full_scan_path", self.full_scan_label, self.full_scan_delete_btn)
+        ).grid(row=0, column=1, padx=(0, 5), sticky="w")
+
+        # Кнопка "Удалить" (изначально скрыта)
+        self.full_scan_delete_btn = ctk.CTkButton(
+            scan_row,
+            text="✕ Удалить",
+            width=80,
+            fg_color="#c0392b",
+            hover_color="#a93226",
+            command=lambda: self._remove_scan("full_scan_path", self.full_scan_label, self.full_scan_delete_btn)
+        )
+        self.full_scan_delete_btn.grid(row=0, column=2, sticky="w")
+        self.full_scan_delete_btn.grid_remove()  # Скрыта по умолчанию
 
         # ========== ПРАВАЯ КОЛОНКА ==========
         right_frame = ctk.CTkFrame(main_container, fg_color="transparent")
@@ -1132,12 +1175,8 @@ class HotelApp(ctk.CTk):
         else:
             self.children_frame.grid_remove()
 
-    def _attach_scan(self, path_attr_name, label_widget):
-        """
-        Универсальный метод для прикрепления скана документа.
-        :param path_attr_name: имя атрибута объекта, в котором сохранить путь (строка)
-        :param label_widget: виджет CTkLabel (или любой с методом configure), которому установим текст и цвет
-        """
+    def _attach_scan(self, path_attr_name, label_widget, delete_btn_widget=None):
+        """ Метод для прикрепления скана документа """
         from tkinter import filedialog
         import shutil
         import os
@@ -1157,8 +1196,35 @@ class HotelApp(ctk.CTk):
         # Сохраняем путь в указанном атрибуте
         setattr(self, path_attr_name, dest)
 
+        MAX_LEN = 12
+        if len(filename) <= MAX_LEN:
+            display_name = filename
+        else:
+            name, ext = os.path.splitext(filename)
+            display_name = name[:8] + "…" + ext
+
         # Обновляем метку
-        label_widget.configure(text=f"📎 {filename}", text_color="#2ecc71")
+        label_widget.configure(text=display_name, text_color="#2ecc71", width=110)
+
+        if delete_btn_widget:
+            delete_btn_widget.grid()
+
+    def _remove_scan(self, path_attr_name, label_widget, delete_btn_widget):
+        """Удаляет прикреплённый скан"""
+        import os
+
+        filepath = getattr(self, path_attr_name, None)
+        if filepath and os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+            except Exception:
+                pass
+
+        if hasattr(self, path_attr_name):
+            delattr(self, path_attr_name)
+
+        label_widget.configure(text="Скан не прикреплён", text_color="#888888")
+        delete_btn_widget.grid_remove()
 
     def _on_full_citizenship_change(self, value):
         """Показывает/скрывает миграционную карту и адаптирует поля документа для иностранца"""
@@ -1375,6 +1441,17 @@ class HotelApp(ctk.CTk):
             return
         guest_id = self.current_full_guest_id
 
+        # берем дату из поля, но если она пустая —
+        # загружаем существующую из БД, чтобы не удалить
+        birth_date_from_form = self.full_birth_date.get().strip()
+
+        if birth_date_from_form:
+            birth_date_to_save = birth_date_from_form
+        else:
+            # Если поле пустое — получаем существующую дату из БД
+            existing_guest = get_guest_by_id(guest_id)
+            birth_date_to_save = existing_guest["birth_date"] if existing_guest else None
+
         data = {
             'doc_type': self.full_doc_type.get(),
             'doc_series': self.full_passport_series.get().strip() or None,
@@ -1384,7 +1461,7 @@ class HotelApp(ctk.CTk):
             'doc_department_code': self.full_department_code.get().strip() if self.full_department_code.winfo_ismapped() else None,
             'doc_expiry_date': self.full_doc_expiry.get().strip() if self.full_expiry_frame.winfo_ismapped() else None,
             'registration_address': self.full_registration_address.get().strip() or None,
-            'birth_date': self.full_birth_date.get().strip() or None,
+            'birth_date': birth_date_to_save,
             'language': self.full_language.get(),
             'migration_card_number': self.full_migration_card.get().strip() if self.full_migration_frame.winfo_ismapped() else None,
             'migration_card_expiry': self.full_migration_expiry.get().strip() if self.full_migration_frame.winfo_ismapped() else None,
@@ -1692,6 +1769,11 @@ class HotelApp(ctk.CTk):
             doc_expiry = self.entry_doc_expiry.get().strip() if self.doc_expiry_frame.winfo_ismapped() else None
             citizenship = self.citizenship_quick_var.get()
 
+            # Получаем дату рождения
+            birth_date_str = self.entry_birth_quick.get().strip()
+            if not birth_date_str:
+                birth_date_str = None
+
             # --- Поиск существующего гостя по документу ---
             existing = None
             if pn:
@@ -1733,6 +1815,7 @@ class HotelApp(ctk.CTk):
                         "migration_card_expiry": migr_expiry,
                         "doc_expiry_date":       doc_expiry,
                         "citizenship":           citizenship,
+                        "birth_date":            birth_date_str,
                     }
                 )
 
@@ -1874,8 +1957,8 @@ class HotelApp(ctk.CTk):
             ctk.CTkLabel(details_window, text=f"Выезд: {check_out}", font=("Arial", 11)).pack(pady=(0, 5))
 
             # --- СЕКЦИЯ ГОСТЕЙ В НОМЕРЕ ---
-            ctk.CTkFrame(details_window, height=1, fg_color="#444444").pack(fill="x", padx=20, pady=(10, 5))
-            ctk.CTkLabel(details_window, text="ГОСТИ В НОМЕРЕ:", font=("Arial", 10), text_color="#888888").pack()
+            ctk.CTkFrame(details_window, height=1, fg_color=("#444444")).pack(fill="x", padx=20, pady=(10, 5))
+            ctk.CTkLabel(details_window, text="ГОСТИ В НОМЕРЕ:", font=("Arial", 10), text_color=("#1a1a1a", "#888888")).pack()
 
             booking_id = get_active_booking_id(num)
 
@@ -1897,7 +1980,7 @@ class HotelApp(ctk.CTk):
                                 guests_list_frame,
                                 text=text,
                                 font=("Arial", 11),
-                                text_color="#cccccc"
+                                text_color=("#666666", "#cccccc")
                             ).pack(anchor="w", pady=1)
                     else:
                         ctk.CTkLabel(
@@ -2388,7 +2471,8 @@ class HotelApp(ctk.CTk):
             text="Отмена",
             fg_color="transparent",
             border_width=1,
-            command=add_window.destroy
+            command=add_window.destroy,
+            text_color=("#1a1a1a", "#D3D3D3")
         ).pack(side="left", expand=True, padx=(5, 0))
 
         # Инициализация полей
@@ -2631,6 +2715,11 @@ class HotelApp(ctk.CTk):
         self.show_rooms()
 
     def show_tooltip(self, event, text):
+        # Отменяем таймер скрытия если есть
+        if hasattr(self, '_hide_timer') and self._hide_timer:
+            self.after_cancel(self._hide_timer)
+            self._hide_timer = None
+
         # Отменяем предыдущий таймер если есть
         if self.tooltip_timer:
             self.after_cancel(self.tooltip_timer)
@@ -2676,11 +2765,15 @@ class HotelApp(ctk.CTk):
         self.tooltip_timer = self.after(3000, self.hide_tooltip)
 
     def hide_tooltip(self, event=None):
-        # Отменяем таймер появления
         if self.tooltip_timer:
             self.after_cancel(self.tooltip_timer)
             self.tooltip_timer = None
 
+        # Скрываем с небольшой задержкой
+        self._hide_timer = self.after(100, self._do_hide_tooltip)
+
+    def _do_hide_tooltip(self):
+        self._hide_timer = None
         if self.tooltip_window is not None:
             try:
                 self.tooltip_window.destroy()
