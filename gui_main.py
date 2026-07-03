@@ -395,12 +395,13 @@ class HotelApp(ctk.CTk):
         ctk.CTkLabel(self.main_frame, text="Регистрация гостя", font=("Arial", 20)).grid(row=0, column=0, pady=(20, 10))
 
         # --- Вкладки ---
+
         self.tab_view = ctk.CTkTabview(
             self.main_frame,
-            fg_color="transparent",  # прозрачный фон
-            segmented_button_fg_color="#2b2b2b",  # цвет полоски с кнопками вкладок
-            segmented_button_selected_color="#1f538d",  # цвет активной вкладки
-            segmented_button_unselected_color="#2b2b2b",  # цвет неактивной
+            fg_color="transparent",
+            segmented_button_fg_color="#3c3c3c",
+            segmented_button_selected_color="#1f538d",
+            segmented_button_unselected_color="#3c3c3c",
             segmented_button_selected_hover_color="#1a4a7a",
         )
 
@@ -2766,14 +2767,17 @@ class HotelApp(ctk.CTk):
         self.tooltip_window.label = lbl
         self.tooltip_window.geometry(f"+{self._tooltip_x + 15}+{self._tooltip_y + 10}")
 
-        self.tooltip_timer = self.after(3000, self.hide_tooltip)
+        self._auto_hide_timer = self.after(3000, self.hide_tooltip)
 
     def hide_tooltip(self, event=None):
+        if hasattr(self, '_auto_hide_timer') and self._auto_hide_timer:
+            self.after_cancel(self._auto_hide_timer)
+            self._auto_hide_timer = None
+
         if self.tooltip_timer:
             self.after_cancel(self.tooltip_timer)
             self.tooltip_timer = None
 
-        # Скрываем с небольшой задержкой
         self._hide_timer = self.after(100, self._do_hide_tooltip)
 
     def _do_hide_tooltip(self):
