@@ -541,6 +541,28 @@ def get_all_bookings() -> list:
             "SELECT * FROM bookings ORDER BY id DESC"
         ).fetchall()
 
+def auto_checkout_expired_bookings():
+    with get_conn() as conn:
+        conn.execute("""
+            UPDATE bookings 
+            SET status = 'completed'
+            WHERE status = 'active' 
+            AND substr(check_out, 7, 4) || '-' || 
+                substr(check_out, 4, 2) || '-' || 
+                substr(check_out, 1, 2) < DATE('now')
+        """)
+        conn.execute("""
+            UPDATE rooms
+            SET is_busy = 0
+            WHERE number IN (
+                SELECT room_number FROM bookings
+                WHERE status = 'completed'
+                AND substr(check_out, 7, 4) || '-' || 
+                    substr(check_out, 4, 2) || '-' || 
+                    substr(check_out, 1, 2) < DATE('now')
+            )
+        """)
+
 
 # ----------------------------------------------------------------------
 # Гости в номере (доп. жильцы)

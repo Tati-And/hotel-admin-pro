@@ -9,7 +9,7 @@ from database import (
     find_guest_by_russian_passport, find_guest_by_doc, update_guest_phone,
     save_guest_extended, update_booking_gr_data, get_setting, save_setting,
     add_guest_to_booking, get_booking_guests, get_active_booking_id,
-    check_out_guest
+    check_out_guest, auto_checkout_expired_bookings
 )
 from dto import GuestDTO, BookingDTO, RoomDTO
 from tkcalendar import Calendar
@@ -33,6 +33,8 @@ DOC_TYPES_ALL = DOC_TYPES_RF + ["Свидетельство о рождении"
 class HotelApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+
+        auto_checkout_expired_bookings()
 
         self.columns_count = 4
         self._ui_scale = 1.0
@@ -152,6 +154,8 @@ class HotelApp(ctk.CTk):
 
         self.current_screen = "rooms"
         self.clear_main_frame()
+
+        auto_checkout_expired_bookings()
 
         ctk.CTkLabel(self.main_frame, text="Состояние номерного фонда", font=("Arial", 20)).pack(pady=20)
 
