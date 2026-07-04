@@ -396,14 +396,22 @@ class HotelApp(ctk.CTk):
 
         # --- Вкладки ---
 
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        tab_fg = "#2b2b2b" if is_dark else "#DBDBDB"
+
         self.tab_view = ctk.CTkTabview(
             self.main_frame,
             fg_color="transparent",
-            segmented_button_fg_color="#3c3c3c",
-            segmented_button_selected_color="#1f538d",
-            segmented_button_unselected_color="#3c3c3c",
-            segmented_button_selected_hover_color="#1a4a7a",
+            segmented_button_fg_color=tab_fg,
+            segmented_button_selected_color="#1f538d" if is_dark else "#3a8fd1",
+            segmented_button_unselected_color=tab_fg,
+            segmented_button_selected_hover_color="#1a4a7a" if is_dark else "#2e7bbf",
+            segmented_button_unselected_hover_color="#4a4a4a" if is_dark else "#c0c0c0",
+            text_color="white" if is_dark else "#111111",
+            text_color_disabled="#aaaaaa" if is_dark else "#444444",
         )
+
+        self.tab_view._segmented_button.configure(font=("Arial", 15))
 
         self.tab_view.add("⚡  Быстрая регистрация")
         self.tab_view.add("📋  Полная регистрация")
@@ -2533,20 +2541,30 @@ class HotelApp(ctk.CTk):
         settings_window.geometry("400x400")
         settings_window.attributes("-topmost", True)
         settings_window.grab_set()
+        print(settings_window.cget("fg_color"))
+
+        settings_window.configure(fg_color=self.main_frame.cget("fg_color"))
+
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        tab_fg = "#2b2b2b" if is_dark else "#DBDBDB"
 
         tab_view = ctk.CTkTabview(
             settings_window,
             fg_color="transparent",
-            segmented_button_fg_color="#2b2b2b",
-            segmented_button_selected_color="#1f538d",
-            segmented_button_unselected_color="#2b2b2b",
-            segmented_button_selected_hover_color="#1a4a7a",
+            segmented_button_fg_color=tab_fg,
+            segmented_button_selected_color="#1f538d" if is_dark else "#3a8fd1",
+            segmented_button_unselected_color=tab_fg,
+            segmented_button_selected_hover_color="#1a4a7a" if is_dark else "#2e7bbf",
+            segmented_button_unselected_hover_color="#4a4a4a" if is_dark else "#c0c0c0",
+            text_color="white" if is_dark else "#111111",
+            text_color_disabled="#aaaaaa" if is_dark else "#444444",
         )
         tab_view.pack(fill="both", expand=True, padx=10, pady=10)
 
         tab_view.add("🎨  Интерфейс")
         tab_view.add("💰  Тарифы")
 
+        tab_view._segmented_button.configure(font=("Arial", 15))
         # --- Вкладка Интерфейс ---
         tab_ui = tab_view.tab("🎨  Интерфейс")
 
