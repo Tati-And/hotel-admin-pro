@@ -5,7 +5,8 @@ import datetime
 from database import init_db, seed_rooms
 from database import (
     get_all_guests, get_free_rooms, add_booking,
-    get_rooms_with_status, get_guest_by_id, update_guest_full_profile,
+    get_rooms_with_status, get_guest_by_id, get_bookings_by_guest_id,
+    update_guest_full_profile,
     find_guest_by_russian_passport, find_guest_by_doc, update_guest_phone,
     save_guest_extended, update_booking_gr_data, get_setting, save_setting,
     add_guest_to_booking, get_booking_guests, get_active_booking_id,
@@ -328,6 +329,212 @@ class HotelApp(ctk.CTk):
 
         self.search_var.trace_add("write", on_search)
 
+    def show_guest_card(self, guest_id):
+        self.current_screen = "guest_card"
+        self.clear_main_frame()
+
+        guest = get_guest_by_id(guest_id)
+        bookings = get_bookings_by_guest_id(guest_id)
+
+        if not guest:
+            return
+
+        # Шапка
+        header_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        header_frame.pack(fill="x", padx=30, pady=(20, 0))
+
+        ctk.CTkButton(
+            header_frame,
+            text="← Назад",
+            width=100,
+            fg_color="transparent",
+            text_color="#4a9eff",
+            hover_color="#1e1e2e",
+            command=self.show_guests
+        ).pack(side="left")
+
+        # Аватар и имя
+        info_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        info_frame.pack(fill="x", padx=30, pady=(10, 0))
+
+        initials = f"{guest['last_name'][0]}{guest['first_name'][0]}"
+        ctk.CTkLabel(
+            info_frame,
+            text=initials,
+            width=60, height=60,
+            corner_radius=30,
+            fg_color="#2d2d8a",
+            text_color="#8ab4ff",
+            font=("Arial", 22, "bold")
+        ).pack(side="left", padx=(0, 15))
+
+        name_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
+        name_frame.pack(side="left")
+
+        full_name = f"{guest['last_name']} {guest['first_name']} {guest['patronymic'] or ''}".strip()
+        ctk.CTkLabel(name_frame, text=full_name, font=("Arial", 20, "bold")).pack(anchor="w")
+        ctk.CTkLabel(
+            name_frame,
+            text=f"#{int(guest_id):05d}  ·  Визитов: {len(bookings)}",
+            font=("Arial", 13),
+            text_color="#888888"
+        ).pack(anchor="w")
+
+        # Предупреждение
+        if not guest['is_complete']:
+            warn_frame = ctk.CTkFrame(self.main_frame, fg_color="#2a1a1a", corner_radius=8)
+            warn_frame.pack(fill="x", padx=30, pady=(12, 0))
+            ctk.CTkLabel(
+                warn_frame,
+                text="⚠️  Карточка заполнена не полностью",
+                text_color="#f39c12",
+                font=("Arial", 13)
+            ).pack(padx=15, pady=8, anchor="w")
+
+        # Табвью
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        tab_fg = "#2b2b2b" if is_dark else "#DBDBDB"
+
+        tab_view = ctk.CTkTabview(
+            self.main_frame,
+            fg_color="transparent",
+            segmented_button_fg_color=tab_fg,
+            segmented_button_selected_color="#1f538d" if is_dark else "#3a8fd1",
+            segmented_button_unselected_color=tab_fg,
+            segmented_button_selected_hover_color="#1a4a7a" if is_dark else "#2e7bbf",
+            segmented_button_unselected_hover_color="#4a4a4a" if is_dark else "#c0c0c0",
+            text_color="white" if is_dark else "#111111",
+            text_color_disabled="#aaaaaa" if is_dark else "#444444",
+        )
+        tab_view.pack(fill="both", expand=True, padx=30, pady=10)
+        tab_view._segmented_button.configure(font=("Arial", 14))
+
+        tab_view.add("👤  Личные данные")
+        tab_view.add("📄  Документы")
+        tab_view.add("📋  История")
+
+        card_bg = "#1e1e2e" if is_dark else "#f0f0f0"
+
+        # --- Вкладка Личные данные ---
+        tab_personal = tab_view.tab("👤  Личные данные")
+
+        fields_personal = [
+            ("Фамилия", guest['last_name']),
+            ("Имя", guest['first_name']),
+            ("Отчество", guest['patronymic']),
+            ("Дата рождения", guest['birth_date']),
+            ("Гражданство", guest['citizenship']),
+            ("Национальность", guest['nationality']),
+            ("Телефон", guest['phone']),
+            ("Адрес регистрации", guest['registration_address']),
+        ]
+        fields_personal = [(l, v) for l, v in fields_personal if v is not None and str(v).strip() != ""]
+
+        grid = ctk.CTkScrollableFrame(tab_personal, fg_color="transparent")
+        grid.pack(fill="both", expand=True, padx=5, pady=10)
+        grid.grid_columnconfigure(0, weight=1, uniform="col")
+        grid.grid_columnconfigure(1, weight=1, uniform="col")
+
+        for idx, (label, value) in enumerate(fields_personal):
+            row = idx // 2
+            col = idx % 2
+            cell = ctk.CTkFrame(grid, fg_color=card_bg, corner_radius=10)
+            cell.grid(row=row, column=col, padx=8, pady=6, sticky="ew")
+            ctk.CTkLabel(cell, text=label, font=("Arial", 11),
+                         text_color="#888888", anchor="w").pack(anchor="w", padx=14, pady=(10, 2))
+            ctk.CTkLabel(cell, text=str(value), font=("Arial", 14),
+                         anchor="w").pack(anchor="w", padx=14, pady=(0, 10))
+
+        # --- Вкладка Документы ---
+        tab_docs = tab_view.tab("📄  Документы")
+
+        fields_docs = [
+            ("Тип документа", guest['doc_type']),
+            ("Серия", guest['doc_series']),
+            ("Номер", guest['doc_number']),
+            ("Кем выдан", guest['doc_issued_by']),
+            ("Дата выдачи", guest['doc_issue_date']),
+            ("Срок действия", guest['doc_expiry_date']),
+            ("Код подразделения", guest['doc_department_code']),
+            ("Миграционная карта", guest['migration_card_number']),
+            ("Действительна до", guest['migration_card_expiry']),
+        ]
+        fields_docs = [(l, v) for l, v in fields_docs if v is not None and str(v).strip() != ""]
+
+        grid_docs = ctk.CTkScrollableFrame(tab_docs, fg_color="transparent")
+        grid_docs.pack(fill="both", expand=True, padx=5, pady=10)
+        grid_docs.grid_columnconfigure(0, weight=1, uniform="col")
+        grid_docs.grid_columnconfigure(1, weight=1, uniform="col")
+
+        for idx, (label, value) in enumerate(fields_docs):
+            row = idx // 2
+            col = idx % 2
+            cell = ctk.CTkFrame(grid_docs, fg_color=card_bg, corner_radius=10)
+            cell.grid(row=row, column=col, padx=8, pady=6, sticky="ew")
+            ctk.CTkLabel(cell, text=label, font=("Arial", 11),
+                         text_color="#888888", anchor="w").pack(anchor="w", padx=14, pady=(10, 2))
+            ctk.CTkLabel(cell, text=str(value), font=("Arial", 14),
+                         anchor="w").pack(anchor="w", padx=14, pady=(0, 10))
+
+        # Скан
+        if guest['passport_scan']:
+            scan_frame = ctk.CTkFrame(tab_docs, fg_color=card_bg, corner_radius=10)
+            scan_frame.pack(fill="x", padx=13, pady=(0, 8))
+            ctk.CTkLabel(scan_frame, text="📎 Скан документа",
+                         font=("Arial", 11), text_color="#888888").pack(anchor="w", padx=14, pady=(10, 2))
+            ctk.CTkButton(
+                scan_frame,
+                text=os.path.basename(guest['passport_scan']),
+                fg_color="transparent",
+                text_color="#4a9eff",
+                hover_color="#1e1e2e",
+                command=lambda p=guest['passport_scan']: os.startfile(p)
+            ).pack(anchor="w", padx=10, pady=(0, 10))
+
+        # --- Вкладка История ---
+        tab_history = tab_view.tab("📋  История")
+
+        if not bookings:
+            ctk.CTkLabel(
+                tab_history,
+                text="😔  Бронирований не найдено",
+                text_color="#666666",
+                font=("Arial", 15)
+            ).pack(pady=40)
+        else:
+            header = ctk.CTkFrame(tab_history, fg_color="#2b2b2b", corner_radius=8, height=35)
+            header.pack(fill="x", padx=10, pady=(8, 4))
+            header.pack_propagate(False)
+            for h, w in zip(["№ брони", "Номер", "Тип", "Заезд", "Выезд", "Сумма", "Статус"],
+                            [70, 60, 100, 100, 100, 90, 90]):
+                ctk.CTkLabel(header, text=h, font=("Arial", 12), width=w,
+                             anchor="w", text_color="#4a9eff").pack(side="left", padx=(10, 0))
+
+            for i, b in enumerate(bookings):
+                b_id, room_num, room_type, check_in, check_out, total_price, status = b
+                bg = "#222233" if i % 2 == 0 else "#1e1e2e"
+                row = ctk.CTkFrame(tab_history, fg_color=bg, corner_radius=6, height=36)
+                row.pack(fill="x", padx=10, pady=1)
+                row.pack_propagate(False)
+
+                status_colors = {
+                    "active": "#2ecc71",
+                    "completed": "#888888",
+                    "closed": "#e74c3c",
+                }
+                status_color = status_colors.get(status, "#888888")
+
+                for val, w in zip(
+                        [f"#{b_id}", str(room_num), room_type or "—", check_in or "—",
+                         check_out or "—", f"{total_price} ₽", status],
+                        [70, 60, 100, 100, 100, 90, 90]
+                ):
+                    ctk.CTkLabel(
+                        row, text=val, font=("Arial", 12), width=w,
+                        anchor="w",
+                        text_color=status_color if val == status else "white"
+                    ).pack(side="left", padx=(10, 0))
+
     def _update_guest_table(self, data):
         """
         Отрисовывает строки таблицы гостей в self.guest_table_frame,
@@ -380,6 +587,16 @@ class HotelApp(ctk.CTk):
             row_frame.bind("<Enter>", on_enter)
             row_frame.bind("<Leave>", on_leave)
             for child in row_frame.winfo_children():
+                child.bind("<Enter>", on_enter)
+                child.bind("<Leave>", on_leave)
+
+            def on_click(e, gid=guest_id):
+                self.show_guest_card(gid)
+
+            row_frame.bind("<Button-1>", on_click)
+            row_frame.configure(cursor="hand2")
+            for child in row_frame.winfo_children():
+                child.bind("<Button-1>", on_click)
                 child.bind("<Enter>", on_enter)
                 child.bind("<Leave>", on_leave)
 
@@ -2541,7 +2758,6 @@ class HotelApp(ctk.CTk):
         settings_window.geometry("400x400")
         settings_window.attributes("-topmost", True)
         settings_window.grab_set()
-        print(settings_window.cget("fg_color"))
 
         settings_window.configure(fg_color=self.main_frame.cget("fg_color"))
 

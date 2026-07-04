@@ -541,6 +541,18 @@ def get_all_bookings() -> list:
             "SELECT * FROM bookings ORDER BY id DESC"
         ).fetchall()
 
+def get_bookings_by_guest_id(guest_id: int):
+    """Возвращает все бронирования гостя по его ID."""
+    with get_conn() as conn:
+        return conn.execute("""
+            SELECT b.id, b.room_number, r.type, b.check_in, b.check_out, 
+                   b.total_price, b.status
+            FROM bookings b
+            LEFT JOIN rooms r ON b.room_number = r.number
+            WHERE b.guest_id = ?
+            ORDER BY b.check_in DESC
+        """, (guest_id,)).fetchall()
+
 def auto_checkout_expired_bookings():
     with get_conn() as conn:
         conn.execute("""
